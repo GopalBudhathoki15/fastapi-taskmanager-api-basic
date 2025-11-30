@@ -1,8 +1,13 @@
 from __future__ import annotations
+from typing import TYPE_CHECKING
+
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import ForeignKey
+
 from db.databases import Base
-from user import User
+
+if TYPE_CHECKING:
+    from models.user import User
 
 
 class Task(Base):
@@ -14,4 +19,4 @@ class Task(Base):
     is_completed: Mapped[bool] = mapped_column(default=False)
 
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
-    user: Mapped[User] = relationship(back_populates="tasks")
+    user: Mapped["User"] = relationship(back_populates="tasks")

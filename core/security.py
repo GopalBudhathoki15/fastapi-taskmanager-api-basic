@@ -1,5 +1,11 @@
+from fastapi import Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer
 from passlib.context import CryptContext
-from config import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
+from core.config import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
+from db.databases import get_db
+from sqlalchemy.orm import Session
+from jose import JWTError
+from models.user import User
 
 
 # This object will handle hashing and verifying passwords
@@ -32,3 +38,31 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None) -> s
 
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
+
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
+
+
+def get_current_user(
+    token: str = Depends(oauth2_scheme),
+    db: Session = Depends(get_db),
+) -> User:
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id: str | None = payload.get("sub")
+        if user_id is None:
+            raise credentials_exception
+    except JWTError:
+        raise credentials_exception
+
+    user = db.query(User).filter(User.id == int(user_id)).first()
+    if user is None:
+        raise credentials_exception
+
+    return user

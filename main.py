@@ -3,7 +3,6 @@ from fastapi import FastAPI
 
 from db.session import engine
 from db.databases import Base
-import models
 from routers import users, auth, tasks
 
 app = FastAPI()

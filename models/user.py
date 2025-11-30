@@ -1,7 +1,12 @@
 from __future__ import annotations
+from typing import TYPE_CHECKING
+
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
 from db.databases import Base
-from task import Task
+
+if TYPE_CHECKING:
+    from models.task import Task
 
 
 class User(Base):
@@ -12,4 +17,4 @@ class User(Base):
     email: Mapped[str] = mapped_column(unique=True)
     password: Mapped[str] = mapped_column(nullable=False)
 
-    tasks: Mapped[list[Task]] = relationship(back_populates="user")
+    tasks: Mapped[list["Task"]] = relationship(back_populates="user")
