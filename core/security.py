@@ -1,27 +1,24 @@
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from passlib.context import CryptContext
+from datetime import datetime, timedelta, timezone
 from core.config import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
 from db.databases import get_db
 from sqlalchemy.orm import Session
-from jose import JWTError
 from models.user import User
+from pwdlib import PasswordHash
+import jwt
+from jwt.exceptions import InvalidTokenError
 
 
-# This object will handle hashing and verifying passwords
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+ph = PasswordHash.recommended()
 
 
 def get_password_hash(password: str) -> str:
-    return pwd_context.hash(password)
+    return ph.hash(password)
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return pwd_context.verify(plain_password, hashed_password)
-
-
-from datetime import datetime, timedelta, timezone
-from jose import jwt
+    return ph.verify(plain_password, hashed_password)
 
 
 def create_access_token(data: dict, expires_delta: timedelta | None = None) -> str:
@@ -58,7 +55,7 @@ def get_current_user(
         user_id: str | None = payload.get("sub")
         if user_id is None:
             raise credentials_exception
-    except JWTError:
+    except InvalidTokenError:
         raise credentials_exception
 
     user = db.query(User).filter(User.id == int(user_id)).first()
